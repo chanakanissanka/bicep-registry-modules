@@ -2,6 +2,37 @@
 
 The latest version of the changelog can be found [here](https://github.com/Azure/bicep-registry-modules/blob/main/avm/res/cognitive-services/account/CHANGELOG.md).
 
+## 0.18.0
+
+### Changes
+
+- Bumped the `Microsoft.CognitiveServices/accounts/deployments` API version from `@2025-06-01` to `@2026-05-01`, the minimum version verified to accept `properties.modelProviderData`
+- Refactored `Microsoft.CognitiveServices/accounts/deployments` from an inline resource loop into a dedicated `deployment` child module while preserving the parent module's existing `deployments` parameter contract.
+
+### Breaking Changes
+
+- None.
+
+## 0.17.0
+
+### Changes
+
+- None
+
+### Breaking Changes
+
+- Updated the diagnostic implementation to avoid automatically enabling both metrics and logs when only one is specified.
+
+## 0.16.0
+
+### Changes
+
+- Added the `enableDefenderForAI` parameter to enable or disable Microsoft Defender for AI (`Microsoft.CognitiveServices/accounts/defenderForAISettings`) on the account. When not set, the Defender for AI settings are left unmanaged by the module (fixes [#6603](https://github.com/Azure/bicep-registry-modules/issues/6603))
+
+### Breaking Changes
+
+- None
+
 ## 0.15.1
 
 ### Changes
