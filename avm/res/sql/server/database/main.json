@@ -5,8 +5,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.44.1.10279",
-      "templateHash": "6504581249897944465"
+      "version": "0.48.1.52935",
+      "templateHash": "6947159984522603013"
     },
     "name": "SQL Server Database",
     "description": "This module deploys an Azure SQL Server Database."
@@ -121,6 +121,28 @@
           "nullable": true,
           "metadata": {
             "description": "Optional. Enable/Disable usage telemetry for module."
+          }
+        },
+        "timeBasedImmutability": {
+          "type": "string",
+          "allowedValues": [
+            "Disabled",
+            "Enabled"
+          ],
+          "nullable": true,
+          "metadata": {
+            "description": "Optional. The setting for whether to enable time-based immutability for future backups. When set, future backups will have TimeBasedImmutability enabled."
+          }
+        },
+        "timeBasedImmutabilityMode": {
+          "type": "string",
+          "allowedValues": [
+            "Locked",
+            "Unlocked"
+          ],
+          "nullable": true,
+          "metadata": {
+            "description": "Optional. The setting for time-based immutability mode for future backup. Only effective if TimeBasedImmutability is enabled. Caution: Immutability of LTR backup cannot be removed if TimeBasedImmutabilityMode is Locked."
           }
         }
       },
@@ -711,17 +733,19 @@
     }
   },
   "variables": {
+    "$fxv#0": "46d3xbcp.res.3254c50",
     "formattedUserAssignedIdentities": "[reduce(map(coalesce(tryGet(parameters('managedIdentities'), 'userAssignedResourceIds'), createArray()), lambda('id', createObject(format('{0}', lambdaVariables('id')), createObject()))), createObject(), lambda('cur', 'next', union(lambdaVariables('cur'), lambdaVariables('next'))))]",
     "identity": "[if(not(empty(parameters('managedIdentities'))), createObject('type', if(not(empty(coalesce(tryGet(parameters('managedIdentities'), 'userAssignedResourceIds'), createObject()))), 'UserAssigned', null()), 'userAssignedIdentities', if(not(empty(variables('formattedUserAssignedIdentities'))), variables('formattedUserAssignedIdentities'), null())), null())]",
     "isHSMManagedCMK": "[equals(tryGet(split(coalesce(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), ''), '/'), 7), 'managedHSMs')]",
-    "enableReferencedModulesTelemetry": false
+    "enableReferencedModulesTelemetry": false,
+    "telemetryIdPrefix": "[variables('$fxv#0')]"
   },
   "resources": {
     "cMKKeyVault::cMKKey": {
       "condition": "[and(and(not(empty(parameters('customerManagedKey'))), not(variables('isHSMManagedCMK'))), and(not(empty(parameters('customerManagedKey'))), not(variables('isHSMManagedCMK'))))]",
       "existing": true,
       "type": "Microsoft.KeyVault/vaults/keys",
-      "apiVersion": "2025-05-01",
+      "apiVersion": "2026-02-01",
       "subscriptionId": "[split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/')[2]]",
       "resourceGroup": "[split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/')[4]]",
       "name": "[format('{0}/{1}', last(split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/')), tryGet(parameters('customerManagedKey'), 'keyName'))]"
@@ -736,7 +760,7 @@
       "condition": "[and(not(empty(parameters('customerManagedKey'))), not(variables('isHSMManagedCMK')))]",
       "existing": true,
       "type": "Microsoft.KeyVault/vaults",
-      "apiVersion": "2025-05-01",
+      "apiVersion": "2026-02-01",
       "subscriptionId": "[split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/')[2]]",
       "resourceGroup": "[split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/')[4]]",
       "name": "[last(split(tryGet(parameters('customerManagedKey'), 'keyVaultResourceId'), '/'))]"
@@ -745,7 +769,7 @@
       "condition": "[parameters('enableTelemetry')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
-      "name": "[format('46d3xbcp.res.sql-serverdb.{0}.{1}', replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
+      "name": "[format('{0}.{1}.{2}', variables('telemetryIdPrefix'), replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
       "properties": {
         "mode": "Incremental",
         "template": {
@@ -896,8 +920,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "5827014469564066341"
+              "version": "0.48.1.52935",
+              "templateHash": "13568165272207022854"
             },
             "name": "Azure SQL Server Database Short Term Backup Retention Policies",
             "description": "This module deploys an Azure SQL Server Database Short-Term Backup Retention Policy."
@@ -937,12 +961,16 @@
               }
             }
           },
+          "variables": {
+            "$fxv#0": "46d3xbcp.res.b99866e",
+            "telemetryIdPrefix": "[variables('$fxv#0')]"
+          },
           "resources": [
             {
               "condition": "[parameters('enableTelemetry')]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2025-04-01",
-              "name": "[format('46d3xbcp.res.sql-server-dbbckpshorttermretpolicy.{0}.{1}', replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
+              "name": "[format('{0}.{1}.{2}', variables('telemetryIdPrefix'), replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
               "properties": {
                 "mode": "Incremental",
                 "template": {
@@ -1014,6 +1042,9 @@
           "databaseName": {
             "value": "[parameters('name')]"
           },
+          "enableTelemetry": {
+            "value": "[variables('enableReferencedModulesTelemetry')]"
+          },
           "weeklyRetention": {
             "value": "[tryGet(parameters('backupLongTermRetentionPolicy'), 'weeklyRetention')]"
           },
@@ -1026,8 +1057,11 @@
           "weekOfYear": {
             "value": "[tryGet(parameters('backupLongTermRetentionPolicy'), 'weekOfYear')]"
           },
-          "enableTelemetry": {
-            "value": "[variables('enableReferencedModulesTelemetry')]"
+          "timeBasedImmutability": {
+            "value": "[tryGet(parameters('backupLongTermRetentionPolicy'), 'timeBasedImmutability')]"
+          },
+          "timeBasedImmutabilityMode": {
+            "value": "[tryGet(parameters('backupLongTermRetentionPolicy'), 'timeBasedImmutabilityMode')]"
           }
         },
         "template": {
@@ -1037,8 +1071,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.44.1.10279",
-              "templateHash": "17950411460359097213"
+              "version": "0.48.1.52935",
+              "templateHash": "15230278097924634261"
             },
             "name": "SQL Server Database Long Term Backup Retention Policies",
             "description": "This module deploys an Azure SQL Server Database Long-Term Backup Retention Policy."
@@ -1084,6 +1118,28 @@
                 "description": "Optional. Yearly retention in ISO 8601 duration format."
               }
             },
+            "timeBasedImmutability": {
+              "type": "string",
+              "allowedValues": [
+                "Disabled",
+                "Enabled"
+              ],
+              "defaultValue": "Disabled",
+              "metadata": {
+                "description": "Optional. The setting for whether to enable time-based immutability for future backups. When set, future backups will have TimeBasedImmutability enabled."
+              }
+            },
+            "timeBasedImmutabilityMode": {
+              "type": "string",
+              "allowedValues": [
+                "Locked",
+                "Unlocked"
+              ],
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. The setting for time-based immutability mode for future backup. Only effective if TimeBasedImmutability is enabled. Caution: Immutability of LTR backup cannot be removed if TimeBasedImmutabilityMode is Locked."
+              }
+            },
             "enableTelemetry": {
               "type": "bool",
               "defaultValue": true,
@@ -1091,6 +1147,10 @@
                 "description": "Optional. Enable/Disable usage telemetry for module."
               }
             }
+          },
+          "variables": {
+            "$fxv#0": "46d3xbcp.res.55b299c",
+            "telemetryIdPrefix": "[variables('$fxv#0')]"
           },
           "resources": {
             "server::database": {
@@ -1109,7 +1169,7 @@
               "condition": "[parameters('enableTelemetry')]",
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2025-04-01",
-              "name": "[format('46d3xbcp.res.sql-server-dbbckplongtermretpolicy.{0}.{1}', replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
+              "name": "[format('{0}.{1}.{2}', variables('telemetryIdPrefix'), replace('-..--..-', '.', '-'), substring(uniqueString(deployment().name), 0, 4))]",
               "properties": {
                 "mode": "Incremental",
                 "template": {
@@ -1133,7 +1193,9 @@
                 "monthlyRetention": "[parameters('monthlyRetention')]",
                 "weeklyRetention": "[parameters('weeklyRetention')]",
                 "weekOfYear": "[parameters('weekOfYear')]",
-                "yearlyRetention": "[parameters('yearlyRetention')]"
+                "yearlyRetention": "[parameters('yearlyRetention')]",
+                "timeBasedImmutability": "[parameters('timeBasedImmutability')]",
+                "timeBasedImmutabilityMode": "[if(equals(parameters('timeBasedImmutability'), 'Enabled'), coalesce(parameters('timeBasedImmutabilityMode'), 'Locked'), null())]"
               }
             }
           },

@@ -5,7 +5,7 @@ metadata description = 'This module deploys a Cassandra View (Materialized View)
 param name string
 
 @description('Optional. Tags of the Cassandra view resource.')
-param tags resourceInput<'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces/views@2025-05-01-preview'>.tags?
+param tags resourceInput<'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces/views@2026-04-01-preview'>.tags?
 
 @description('Conditional. The name of the parent Database Account. Required if the template is used in a standalone deployment.')
 param databaseAccountName string
@@ -28,9 +28,11 @@ param location string = resourceGroup().location
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  name: '46d3xbcp.res.doctdb-dbacct-cassandrkeyspaceview.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -47,15 +49,15 @@ resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableT
   }
 }
 
-resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2025-05-01-preview' existing = {
+resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2026-04-01-preview' existing = {
   name: databaseAccountName
 
-  resource cassandraKeyspace 'cassandraKeyspaces@2025-05-01-preview' existing = {
+  resource cassandraKeyspace 'cassandraKeyspaces@2026-04-01-preview' existing = {
     name: cassandraKeyspaceName
   }
 }
 
-var viewOptions = contains(databaseAccount.properties.capabilities, { name: 'EnableServerless' })
+var viewOptions = databaseAccount.properties.capacityMode == 'Serverless'
   ? {}
   : {
       autoscaleSettings: throughput == null && autoscaleSettingsMaxThroughput != null
@@ -66,7 +68,7 @@ var viewOptions = contains(databaseAccount.properties.capabilities, { name: 'Ena
       throughput: throughput
     }
 
-resource cassandraView 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces/views@2025-05-01-preview' = {
+resource cassandraView 'Microsoft.DocumentDB/databaseAccounts/cassandraKeyspaces/views@2026-04-01-preview' = {
   name: name
   tags: tags
   location: location
@@ -88,3 +90,6 @@ output resourceId string = cassandraView.id
 
 @description('The name of the resource group the Cassandra view was created in.')
 output resourceGroupName string = resourceGroup().name
+
+@description('The location of the Cassandra view.')
+output location string = cassandraView.location

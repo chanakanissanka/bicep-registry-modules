@@ -2,6 +2,30 @@
 
 The latest version of the changelog can be found [here](https://github.com/Azure/bicep-registry-modules/blob/main/avm/res/app/managed-environment/CHANGELOG.md).
 
+## 0.17.0
+
+### Changes
+
+- Upgraded `Microsoft.App/managedEnvironments/certificates` to `2026-01-01`
+- Added the certificate module's location output.
+
+### Breaking Changes
+
+- None
+
+## 0.16.0
+
+### Changes
+
+- Upgrade `Microsoft.App/managedEnvironments` to `2026-01-01`
+- Added examples to parameters.
+
+### Breaking Changes
+
+- `workloadProfiles` paramerter: Removed property 'enableFips'
+- removed `openTelemetryConfiguration` parameter
+- removed `appInsightsConnectionString` parameter
+
 ## 0.15.0
 
 ### Changes

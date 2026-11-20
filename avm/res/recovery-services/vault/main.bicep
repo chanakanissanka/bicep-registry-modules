@@ -91,16 +91,24 @@ param customerManagedKey customerManagedKeyWithAutoRotateType?
 var enableReferencedModulesTelemetry = false
 
 var formattedUserAssignedIdentities = reduce(
-  map((managedIdentities.?userAssignedResourceIds ?? []), (id) => { '${id}': {} }),
+  map(
+    union(
+      (managedIdentities.?userAssignedResourceIds ?? []),
+      (!empty(customerManagedKey.?userAssignedIdentityResourceId)
+        ? [customerManagedKey.?userAssignedIdentityResourceId]
+        : [])
+    ),
+    (id) => { '${id}': {} }
+  ),
   {},
   (cur, next) => union(cur, next)
 ) // Converts the flat array to an object like { '${id1}': {}, '${id2}': {} }
 
-var identity = !empty(managedIdentities)
+var identity = !empty(managedIdentities) || !empty(formattedUserAssignedIdentities)
   ? {
       type: (managedIdentities.?systemAssigned ?? false)
-        ? (!empty(managedIdentities.?userAssignedResourceIds ?? {}) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned')
-        : (!empty(managedIdentities.?userAssignedResourceIds ?? {}) ? 'UserAssigned' : 'None')
+        ? (!empty(formattedUserAssignedIdentities) ? 'SystemAssigned,UserAssigned' : 'SystemAssigned')
+        : (!empty(formattedUserAssignedIdentities) ? 'UserAssigned' : 'None')
       userAssignedIdentities: !empty(formattedUserAssignedIdentities) ? formattedUserAssignedIdentities : null
     }
   : null
@@ -156,29 +164,31 @@ var formattedRoleAssignments = [
 
 var isHSMManagedCMK = split(customerManagedKey.?keyVaultResourceId ?? '', '/')[?7] == 'managedHSMs'
 
-resource cMKKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
-  name: last(split((customerManagedKey.?keyVaultResourceId!), '/'))
+resource cMKKeyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
+  name: last(split((customerManagedKey!.?keyVaultResourceId!), '/'))
   scope: resourceGroup(
-    split(customerManagedKey.?keyVaultResourceId!, '/')[2],
-    split(customerManagedKey.?keyVaultResourceId!, '/')[4]
+    split(customerManagedKey!.?keyVaultResourceId!, '/')[2],
+    split(customerManagedKey!.?keyVaultResourceId!, '/')[4]
   )
 
-  resource cMKKey 'keys@2025-05-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
-    name: customerManagedKey.?keyName!
+  resource cMKKey 'keys@2026-02-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
+    name: customerManagedKey!.?keyName!
   }
 }
 
 resource cMKUserAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' existing = if (!empty(customerManagedKey.?userAssignedIdentityResourceId)) {
-  name: last(split(customerManagedKey.?userAssignedIdentityResourceId!, '/'))
+  name: last(split(customerManagedKey!.?userAssignedIdentityResourceId!, '/'))
   scope: resourceGroup(
-    split(customerManagedKey.?userAssignedIdentityResourceId!, '/')[2],
-    split(customerManagedKey.?userAssignedIdentityResourceId!, '/')[4]
+    split(customerManagedKey!.?userAssignedIdentityResourceId!, '/')[2],
+    split(customerManagedKey!.?userAssignedIdentityResourceId!, '/')[4]
   )
 }
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  name: '46d3xbcp.res.recoveryservices-vault.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -268,6 +278,20 @@ resource rsv 'Microsoft.RecoveryServices/vaults@2025-08-01' = {
   }
 }
 
+var replicationContainerMappings = flatten(map(
+  replicationFabrics ?? [],
+  fabric =>
+    flatten(map(
+      fabric.?replicationContainers ?? [],
+      container =>
+        map(container.?mappings ?? [], mapping => {
+          fabricName: fabric.?name ?? fabric.location
+          containerName: container.name
+          mapping: mapping
+        })
+    ))
+))
+
 module rsv_replicationFabrics 'replication-fabric/main.bicep' = [
   for (replicationFabric, index) in (replicationFabrics ?? []): {
     name: '${uniqueString(deployment().name, location)}-RSV-Fabric-${index}'
@@ -275,11 +299,34 @@ module rsv_replicationFabrics 'replication-fabric/main.bicep' = [
       recoveryVaultName: rsv.name
       name: replicationFabric.?name
       location: replicationFabric.location
-      replicationContainers: replicationFabric.?replicationContainers
+      replicationContainers: map(replicationFabric.?replicationContainers ?? [], container => {
+        name: container.name
+      })
       enableTelemetry: enableReferencedModulesTelemetry
     }
     dependsOn: [
       rsv_replicationPolicies
+    ]
+  }
+]
+
+module rsv_replicationContainerMappings 'replication-fabric/replication-protection-container/replication-protection-container-mapping/main.bicep' = [
+  for (containerMapping, index) in replicationContainerMappings: {
+    name: '${uniqueString(deployment().name, location)}-RSV-ContainerMapping-${index}'
+    params: {
+      name: containerMapping.mapping.?name
+      policyResourceId: containerMapping.mapping.?policyResourceId
+      policyName: containerMapping.mapping.?policyName
+      recoveryVaultName: rsv.name
+      replicationFabricName: containerMapping.fabricName
+      sourceProtectionContainerName: containerMapping.containerName
+      targetProtectionContainerResourceId: containerMapping.mapping.?targetProtectionContainerResourceId
+      targetContainerFabricName: containerMapping.mapping.?targetContainerFabricName
+      targetContainerName: containerMapping.mapping.?targetContainerName
+      enableTelemetry: enableReferencedModulesTelemetry
+    }
+    dependsOn: [
+      rsv_replicationFabrics
     ]
   }
 ]
@@ -334,15 +381,17 @@ module rsv_backupConfig 'backup-config/main.bicep' = if (!empty(backupConfig)) {
   params: {
     recoveryVaultName: rsv.name
     name: backupConfig.?name
+    // Once `softDeleteSettings` is set on the vault itself, the backupconfig API no longer accepts writes to the
+    // soft delete related properties. They are therefore not forwarded to the child module in that case.
     enhancedSecurityState: !empty(softDeleteSettings) ? null : backupConfig.?enhancedSecurityState
     resourceGuardOperationRequests: backupConfig.?resourceGuardOperationRequests
     softDeleteFeatureState: !empty(softDeleteSettings) ? null : backupConfig.?softDeleteFeatureState
     storageModelType: backupConfig.?storageModelType
     storageType: backupConfig.?storageType
     storageTypeState: backupConfig.?storageTypeState
-    isSoftDeleteFeatureStateEditable: backupConfig.?isSoftDeleteFeatureStateEditable
+    isSoftDeleteFeatureStateEditable: !empty(softDeleteSettings) ? null : backupConfig.?isSoftDeleteFeatureStateEditable
     enableTelemetry: enableReferencedModulesTelemetry
-    softDeleteRetentionPeriodInDays: backupConfig.?softDeleteRetentionPeriodInDays
+    softDeleteRetentionPeriodInDays: !empty(softDeleteSettings) ? null : backupConfig.?softDeleteRetentionPeriodInDays
   }
 }
 

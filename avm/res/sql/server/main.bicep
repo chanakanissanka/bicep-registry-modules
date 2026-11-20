@@ -135,6 +135,10 @@ param auditSettings auditSettingsType = {
   state: 'Enabled'
 }
 
+import { diagnosticSettingFullType } from 'br/public:avm/utl/types/avm-common-types:0.6.1'
+@description('Optional. The diagnostic settings of the server\'s `master` database. Server-level audit logs (i.e., the `SQLSecurityAuditEvents` & `DevOpsOperationsAudit` categories) are emitted by the implicitly created `master` database. Hence, forwarding them to a Log Analytics workspace, Event Hub, Storage Account or partner solution requires a diagnostic setting on that database. If no log categories are specified, all logs are configured by default. Metrics are only configured if explicitly specified, as the `master` database does not emit any.')
+param masterDatabaseDiagnosticSettings diagnosticSettingFullType[]?
+
 @description('Optional. Key vault reference and secret settings for the module\'s secrets export.')
 param secretsExportConfiguration secretsExportConfigurationType?
 
@@ -206,21 +210,23 @@ var formattedRoleAssignments = [
 
 var isHSMManagedCMK = split(customerManagedKey.?keyVaultResourceId ?? '', '/')[?7] == 'managedHSMs'
 
-resource cMKKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
+resource cMKKeyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
   name: last(split((customerManagedKey.?keyVaultResourceId!), '/'))
   scope: resourceGroup(
     split(customerManagedKey.?keyVaultResourceId!, '/')[2],
     split(customerManagedKey.?keyVaultResourceId!, '/')[4]
   )
 
-  resource cMKKey 'keys@2025-05-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
+  resource cMKKey 'keys@2026-02-01' existing = if (!empty(customerManagedKey) && !isHSMManagedCMK) {
     name: customerManagedKey.?keyName!
   }
 }
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  name: '46d3xbcp.res.sql-server.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name, location), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -346,7 +352,6 @@ module server_databases 'database/main.bicep' = [
       sourceResourceId: database.?sourceResourceId
       useFreeLimit: database.?useFreeLimit
       zoneRedundant: database.?zoneRedundant
-
       diagnosticSettings: database.?diagnosticSettings
       backupShortTermRetentionPolicy: database.?backupShortTermRetentionPolicy
       backupLongTermRetentionPolicy: database.?backupLongTermRetentionPolicy
@@ -354,6 +359,7 @@ module server_databases 'database/main.bicep' = [
     }
     dependsOn: [
       server_elasticPools // Enables us to add databases to existing elastic pools
+      server_encryptionProtector // To avoid conflicts with encryption
     ]
   }
 ]
@@ -385,6 +391,9 @@ module server_elasticPools 'elastic-pool/main.bicep' = [
       zoneRedundant: elasticPool.?zoneRedundant
       enableTelemetry: enableReferencedModulesTelemetry
     }
+    dependsOn: [
+      server_encryptionProtector
+    ]
   }
 ]
 
@@ -565,6 +574,43 @@ module server_audit_settings 'auditing-setting/main.bicep' = if (!empty(auditSet
   }
 }
 
+// The `master` database is implicitly created together with the logical server and can therefore not be deployed by this
+// module. It is referenced as an existing resource as it is the scope the server-level audit logs are emitted at.
+resource masterDatabase 'Microsoft.Sql/servers/databases@2025-01-01' existing = {
+  name: 'master'
+  parent: server
+}
+
+resource masterDatabase_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [
+  for (diagnosticSetting, index) in (masterDatabaseDiagnosticSettings ?? []): {
+    name: diagnosticSetting.?name ?? '${name}-master-diagnosticSettings'
+    properties: {
+      storageAccountId: diagnosticSetting.?storageAccountResourceId
+      workspaceId: diagnosticSetting.?workspaceResourceId
+      eventHubAuthorizationRuleId: diagnosticSetting.?eventHubAuthorizationRuleResourceId
+      eventHubName: diagnosticSetting.?eventHubName
+      metrics: [
+        // The `master` database does not emit any metrics, hence they are only configured if explicitly requested
+        for group in (diagnosticSetting.?metricCategories ?? []): {
+          category: group.category
+          enabled: group.?enabled ?? true
+          timeGrain: null
+        }
+      ]
+      logs: [
+        for group in (diagnosticSetting.?logCategoriesAndGroups ?? [{ categoryGroup: 'allLogs' }]): {
+          categoryGroup: group.?categoryGroup
+          category: group.?category
+          enabled: group.?enabled ?? true
+        }
+      ]
+      marketplacePartnerId: diagnosticSetting.?marketplacePartnerResourceId
+      logAnalyticsDestinationType: diagnosticSetting.?logAnalyticsDestinationType
+    }
+    scope: masterDatabase
+  }
+]
+
 module secretsExport 'modules/keyVaultExport.bicep' = if (secretsExportConfiguration != null) {
   name: '${uniqueString(deployment().name, location)}-secrets-kv'
   scope: resourceGroup(
@@ -621,6 +667,10 @@ resource server_connection_policy 'Microsoft.Sql/servers/connectionPolicies@2025
   properties: {
     connectionType: connectionPolicy
   }
+  // Connection policy updates also modify the private endpoints' service proxies.
+  dependsOn: [
+    server_privateEndpoints
+  ]
 }
 
 resource server_outbound_firewall_rules 'Microsoft.Sql/servers/outboundFirewallRules@2025-01-01' = [
@@ -673,7 +723,6 @@ output privateEndpoints privateEndpointOutputType[] = [
 //   Definitions   //
 // =============== //
 
-import { diagnosticSettingFullType } from 'br/public:avm/utl/types/avm-common-types:0.6.1'
 import { perDatabaseSettingsType, skuType } from 'elastic-pool/main.bicep'
 import { databaseSkuType, shortTermBackupRetentionPolicyType, longTermBackupRetentionPolicyType } from 'database/main.bicep'
 import { recurringScansType } from 'vulnerability-assessment/main.bicep'
@@ -924,7 +973,7 @@ type elasticPoolType = {
   name: string
 
   @description('Optional. Tags of the resource.')
-  tags: object?
+  tags: resourceInput<'Microsoft.Sql/servers/elasticPools@2023-08-01'>.tags?
 
   @description('Optional. The lock settings of the elastic pool.')
   lock: lockType?
@@ -1083,7 +1132,7 @@ type failoverGroupType = {
   name: string
 
   @description('Optional. Tags of the resource.')
-  tags: object?
+  tags: resourceInput<'Microsoft.Sql/servers/failoverGroups@2025-01-01'>.tags?
 
   @description('Required. List of databases in the failover group.')
   databases: string[]

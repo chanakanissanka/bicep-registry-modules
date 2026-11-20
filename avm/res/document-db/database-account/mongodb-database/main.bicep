@@ -14,17 +14,19 @@ param throughput int = 400
 param collections collectionType[]?
 
 @description('Optional. Tags of the resource.')
-param tags resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2025-04-15'>.tags?
+param tags resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2026-04-01-preview'>.tags?
 
 @description('Optional. Specifies the Autoscale settings. Note: Either throughput or autoscaleSettings is required, but not both.')
-param autoscaleSettings resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2025-04-15'>.properties.options.autoscaleSettings?
+param autoscaleSettings resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2026-04-01-preview'>.properties.options.autoscaleSettings?
 
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  name: '46d3xbcp.res.doctdb-dbacct-mongodbdatabase.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -41,11 +43,11 @@ resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableT
   }
 }
 
-resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2025-04-15' existing = {
+resource databaseAccount 'Microsoft.DocumentDB/databaseAccounts@2026-04-01-preview' existing = {
   name: databaseAccountName
 }
 
-resource mongodbDatabase 'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2025-04-15' = {
+resource mongodbDatabase 'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases@2026-04-01-preview' = {
   name: name
   parent: databaseAccount
   tags: tags
@@ -53,7 +55,7 @@ resource mongodbDatabase 'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases
     resource: {
       id: name
     }
-    options: contains(databaseAccount.properties.capabilities, { name: 'EnableServerless' })
+    options: databaseAccount.properties.capacityMode == 'Serverless'
       ? null
       : {
           throughput: throughput
@@ -102,8 +104,8 @@ type collectionType = {
   throughput: int?
 
   @description('Required. Indexes for the collection.')
-  indexes: resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases/collections@2025-04-15'>.properties.resource.indexes
+  indexes: resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases/collections@2026-04-01-preview'>.properties.resource.indexes
 
   @description('Required. ShardKey for the collection.')
-  shardKey: resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases/collections@2025-04-15'>.properties.resource.shardKey
+  shardKey: resourceInput<'Microsoft.DocumentDB/databaseAccounts/mongodbDatabases/collections@2026-04-01-preview'>.properties.resource.shardKey
 }

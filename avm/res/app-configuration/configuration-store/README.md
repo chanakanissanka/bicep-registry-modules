@@ -29,8 +29,8 @@ For examples, please refer to the [Usage Examples](#usage-examples) section.
 | `Microsoft.Authorization/locks` | 2020-05-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.authorization_locks.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Authorization/2020-05-01/locks)</li></ul> |
 | `Microsoft.Authorization/roleAssignments` | 2022-04-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.authorization_roleassignments.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Authorization/2022-04-01/roleAssignments)</li></ul> |
 | `Microsoft.Insights/diagnosticSettings` | 2021-05-01-preview | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.insights_diagnosticsettings.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Insights/2021-05-01-preview/diagnosticSettings)</li></ul> |
-| `Microsoft.Network/privateEndpoints` | 2024-05-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2024-05-01/privateEndpoints)</li></ul> |
-| `Microsoft.Network/privateEndpoints/privateDnsZoneGroups` | 2024-05-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints_privatednszonegroups.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2024-05-01/privateEndpoints/privateDnsZoneGroups)</li></ul> |
+| `Microsoft.Network/privateEndpoints` | 2025-05-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2025-05-01/privateEndpoints)</li></ul> |
+| `Microsoft.Network/privateEndpoints/privateDnsZoneGroups` | 2025-05-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints_privatednszonegroups.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2025-05-01/privateEndpoints/privateDnsZoneGroups)</li></ul> |
 
 ## Usage examples
 
@@ -150,11 +150,6 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
         value: 'valueName'
       }
     ]
-    managedIdentities: {
-      userAssignedResourceIds: [
-        '<managedIdentityResourceId>'
-      ]
-    }
     softDeleteRetentionInDays: 1
   }
 }
@@ -209,13 +204,6 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
         }
       ]
     },
-    "managedIdentities": {
-      "value": {
-        "userAssignedResourceIds": [
-          "<managedIdentityResourceId>"
-        ]
-      }
-    },
     "softDeleteRetentionInDays": {
       "value": 1
     }
@@ -258,11 +246,6 @@ param keyValues = [
     value: 'valueName'
   }
 ]
-param managedIdentities = {
-  userAssignedResourceIds: [
-    '<managedIdentityResourceId>'
-  ]
-}
 param softDeleteRetentionInDays = 1
 ```
 
@@ -312,7 +295,7 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
             name: '56e2c190-b31e-4518-84de-170b8a5c1b24'
             principalId: '<principalId>'
             principalType: 'ServicePrincipal'
-            roleDefinitionIdOrName: 'Owner'
+            roleDefinitionIdOrName: 'Reader'
           }
           {
             principalId: '<principalId>'
@@ -346,10 +329,10 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
     replicaLocations: [
       {
         name: 'mycentralusreplica'
-        replicaLocation: 'centralus'
+        replicaLocation: '<replicaLocation>'
       }
       {
-        replicaLocation: 'westus'
+        replicaLocation: '<replicaLocation>'
       }
     ]
     roleAssignments: [
@@ -357,7 +340,7 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
         name: '695044c2-3f1f-4843-970a-bed584b95a9a'
         principalId: '<principalId>'
         principalType: 'ServicePrincipal'
-        roleDefinitionIdOrName: 'Owner'
+        roleDefinitionIdOrName: 'Reader'
       }
       {
         name: '<name>'
@@ -433,7 +416,7 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
               "name": "56e2c190-b31e-4518-84de-170b8a5c1b24",
               "principalId": "<principalId>",
               "principalType": "ServicePrincipal",
-              "roleDefinitionIdOrName": "Owner"
+              "roleDefinitionIdOrName": "Reader"
             },
             {
               "principalId": "<principalId>",
@@ -475,10 +458,10 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
       "value": [
         {
           "name": "mycentralusreplica",
-          "replicaLocation": "centralus"
+          "replicaLocation": "<replicaLocation>"
         },
         {
-          "replicaLocation": "westus"
+          "replicaLocation": "<replicaLocation>"
         }
       ]
     },
@@ -488,7 +471,7 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
           "name": "695044c2-3f1f-4843-970a-bed584b95a9a",
           "principalId": "<principalId>",
           "principalType": "ServicePrincipal",
-          "roleDefinitionIdOrName": "Owner"
+          "roleDefinitionIdOrName": "Reader"
         },
         {
           "name": "<name>",
@@ -556,7 +539,7 @@ param keyValues = [
         name: '56e2c190-b31e-4518-84de-170b8a5c1b24'
         principalId: '<principalId>'
         principalType: 'ServicePrincipal'
-        roleDefinitionIdOrName: 'Owner'
+        roleDefinitionIdOrName: 'Reader'
       }
       {
         principalId: '<principalId>'
@@ -590,10 +573,10 @@ param managedIdentities = {
 param replicaLocations = [
   {
     name: 'mycentralusreplica'
-    replicaLocation: 'centralus'
+    replicaLocation: '<replicaLocation>'
   }
   {
-    replicaLocation: 'westus'
+    replicaLocation: '<replicaLocation>'
   }
 ]
 param roleAssignments = [
@@ -601,7 +584,7 @@ param roleAssignments = [
     name: '695044c2-3f1f-4843-970a-bed584b95a9a'
     principalId: '<principalId>'
     principalType: 'ServicePrincipal'
-    roleDefinitionIdOrName: 'Owner'
+    roleDefinitionIdOrName: 'Reader'
   }
   {
     name: '<name>'
@@ -821,10 +804,10 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
     ]
     replicaLocations: [
       {
-        replicaLocation: 'centralus'
+        replicaLocation: '<replicaLocation>'
       }
       {
-        replicaLocation: 'westus'
+        replicaLocation: '<replicaLocation>'
       }
     ]
     softDeleteRetentionInDays: 1
@@ -885,10 +868,10 @@ module configurationStore 'br/public:avm/res/app-configuration/configuration-sto
     "replicaLocations": {
       "value": [
         {
-          "replicaLocation": "centralus"
+          "replicaLocation": "<replicaLocation>"
         },
         {
-          "replicaLocation": "westus"
+          "replicaLocation": "<replicaLocation>"
         }
       ]
     },
@@ -939,10 +922,10 @@ param keyValues = [
 ]
 param replicaLocations = [
   {
-    replicaLocation: 'centralus'
+    replicaLocation: '<replicaLocation>'
   }
   {
-    replicaLocation: 'westus'
+    replicaLocation: '<replicaLocation>'
   }
 ]
 param softDeleteRetentionInDays = 1
@@ -1997,7 +1980,7 @@ This section gives you an overview of all local-referenced module files (i.e., o
 
 | Reference | Type |
 | :-- | :-- |
-| `br/public:avm/res/network/private-endpoint:0.11.0` | Remote reference |
+| `br/public:avm/res/network/private-endpoint:0.12.0` | Remote reference |
 | `br/public:avm/utl/types/avm-common-types:0.5.1` | Remote reference |
 | `br/public:avm/utl/types/avm-common-types:0.6.0` | Remote reference |
 | `br/public:avm/utl/types/avm-common-types:0.6.1` | Remote reference |

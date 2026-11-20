@@ -86,7 +86,6 @@ module testDeployment '../../../main.bicep' = [
       location: enforcedLocation
       roleAssignments: [
         {
-          name: '7027a5c5-d1b1-49e0-80cc-ffdff3a3ada9'
           roleDefinitionIdOrName: 'Owner'
           principalId: nestedDependencies.outputs.serverIdentityPrincipalId
           principalType: 'ServicePrincipal'
@@ -171,6 +170,8 @@ module testDeployment '../../../main.bicep' = [
           }
           backupLongTermRetentionPolicy: {
             monthlyRetention: 'P6M'
+            timeBasedImmutability: 'Enabled'
+            timeBasedImmutabilityMode: 'Locked'
           }
           availabilityZone: -1
           lock: {
@@ -183,6 +184,15 @@ module testDeployment '../../../main.bicep' = [
             keyVersion: last(split(nestedDependencies.outputs.databaseKeyVaultEncryptionKeyUrl, '/'))
             autoRotationEnabled: true
           }
+        }
+      ]
+      masterDatabaseDiagnosticSettings: [
+        {
+          name: 'customSetting'
+          eventHubName: diagnosticDependencies.outputs.eventHubNamespaceEventHubName
+          eventHubAuthorizationRuleResourceId: diagnosticDependencies.outputs.eventHubAuthorizationRuleId
+          storageAccountResourceId: diagnosticDependencies.outputs.storageAccountResourceId
+          workspaceResourceId: diagnosticDependencies.outputs.logAnalyticsWorkspaceResourceId
         }
       ]
       customerManagedKey: {

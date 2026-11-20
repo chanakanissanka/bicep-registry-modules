@@ -12,6 +12,7 @@ param name string = 'vaultconfig'
   'AlwaysON'
   'Disabled'
   'Enabled'
+  'Invalid'
 ])
 param enhancedSecurityState string?
 
@@ -53,7 +54,7 @@ param storageType string = 'GeoRedundant'
 param storageTypeState string = 'Locked'
 
 @description('Optional. Is soft delete feature state editable.')
-param isSoftDeleteFeatureStateEditable bool = true
+param isSoftDeleteFeatureStateEditable bool?
 
 @description('Optional. Soft delete retention period in days.')
 param softDeleteRetentionPeriodInDays int?
@@ -61,9 +62,11 @@ param softDeleteRetentionPeriodInDays int?
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
 
+var telemetryIdPrefix = loadJsonContent('metadata.json', 'telemetryIdPrefix')
+
 #disable-next-line no-deployments-resources
 resource avmTelemetry 'Microsoft.Resources/deployments@2025-04-01' = if (enableTelemetry) {
-  name: '46d3xbcp.res.recsvcs-vault-backupconfig.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
+  name: '${telemetryIdPrefix}.${replace('-..--..-', '.', '-')}.${substring(uniqueString(deployment().name), 0, 4)}'
   properties: {
     mode: 'Incremental'
     template: {
@@ -88,14 +91,21 @@ resource backupConfig 'Microsoft.RecoveryServices/vaults/backupconfig@2026-01-01
   name: name
   parent: rsv
   properties: {
-    enhancedSecurityState: enhancedSecurityState
     resourceGuardOperationRequests: resourceGuardOperationRequests
-    softDeleteFeatureState: softDeleteFeatureState
     storageModelType: storageModelType
     storageType: storageType
     storageTypeState: storageTypeState
-    isSoftDeleteFeatureStateEditable: isSoftDeleteFeatureStateEditable
-    softDeleteRetentionPeriodInDays: softDeleteRetentionPeriodInDays
+    // The soft delete related properties are only sent to the API if they are provided. Once the vault-level
+    // `softDeleteSettings` were used, the backupconfig API rejects any write to these properties, hence they
+    // must be omitted from the request payload entirely instead of being sent as `null`.
+    ...(enhancedSecurityState != null ? { enhancedSecurityState: enhancedSecurityState } : {})
+    ...(softDeleteFeatureState != null ? { softDeleteFeatureState: softDeleteFeatureState } : {})
+    ...(isSoftDeleteFeatureStateEditable != null
+      ? { isSoftDeleteFeatureStateEditable: isSoftDeleteFeatureStateEditable }
+      : {})
+    ...(softDeleteRetentionPeriodInDays != null
+      ? { softDeleteRetentionPeriodInDays: softDeleteRetentionPeriodInDays }
+      : {})
   }
 }
 

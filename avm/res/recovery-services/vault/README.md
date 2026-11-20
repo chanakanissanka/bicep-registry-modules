@@ -79,11 +79,6 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
       keyVaultResourceId: '<keyVaultResourceId>'
       userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
     }
-    managedIdentities: {
-      userAssignedResourceIds: [
-        '<managedIdentityResourceId>'
-      ]
-    }
   }
 }
 ```
@@ -111,13 +106,6 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
         "keyVaultResourceId": "<keyVaultResourceId>",
         "userAssignedIdentityResourceId": "<userAssignedIdentityResourceId>"
       }
-    },
-    "managedIdentities": {
-      "value": {
-        "userAssignedResourceIds": [
-          "<managedIdentityResourceId>"
-        ]
-      }
     }
   }
 }
@@ -140,11 +128,6 @@ param customerManagedKey = {
   keyName: '<keyName>'
   keyVaultResourceId: '<keyVaultResourceId>'
   userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
-}
-param managedIdentities = {
-  userAssignedResourceIds: [
-    '<managedIdentityResourceId>'
-  ]
 }
 ```
 
@@ -561,7 +544,9 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
     // Non-required parameters
     backupConfig: {
       enhancedSecurityState: 'AlwaysON'
+      isSoftDeleteFeatureStateEditable: true
       softDeleteFeatureState: 'AlwaysON'
+      softDeleteRetentionPeriodInDays: 7
     }
     backupPolicies: [
       {
@@ -913,7 +898,7 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
         name: '35288372-e6b4-4333-9ee6-dd997b96d52b'
         principalId: '<principalId>'
         principalType: 'ServicePrincipal'
-        roleDefinitionIdOrName: 'Owner'
+        roleDefinitionIdOrName: 'Reader'
       }
       {
         name: '<name>'
@@ -968,7 +953,9 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
     "backupConfig": {
       "value": {
         "enhancedSecurityState": "AlwaysON",
-        "softDeleteFeatureState": "AlwaysON"
+        "isSoftDeleteFeatureStateEditable": true,
+        "softDeleteFeatureState": "AlwaysON",
+        "softDeleteRetentionPeriodInDays": 7
       }
     },
     "backupPolicies": {
@@ -1344,7 +1331,7 @@ module vault 'br/public:avm/res/recovery-services/vault:<version>' = {
           "name": "35288372-e6b4-4333-9ee6-dd997b96d52b",
           "principalId": "<principalId>",
           "principalType": "ServicePrincipal",
-          "roleDefinitionIdOrName": "Owner"
+          "roleDefinitionIdOrName": "Reader"
         },
         {
           "name": "<name>",
@@ -1401,7 +1388,9 @@ param name = 'rsvmax001'
 // Non-required parameters
 param backupConfig = {
   enhancedSecurityState: 'AlwaysON'
+  isSoftDeleteFeatureStateEditable: true
   softDeleteFeatureState: 'AlwaysON'
+  softDeleteRetentionPeriodInDays: 7
 }
 param backupPolicies = [
   {
@@ -1753,7 +1742,7 @@ param roleAssignments = [
     name: '35288372-e6b4-4333-9ee6-dd997b96d52b'
     principalId: '<principalId>'
     principalType: 'ServicePrincipal'
-    roleDefinitionIdOrName: 'Owner'
+    roleDefinitionIdOrName: 'Reader'
   }
   {
     name: '<name>'

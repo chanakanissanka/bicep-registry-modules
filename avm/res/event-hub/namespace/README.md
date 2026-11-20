@@ -33,7 +33,7 @@ For examples, please refer to the [Usage Examples](#usage-examples) section.
 | `Microsoft.EventHub/namespaces/eventhubs/consumergroups` | 2024-01-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.eventhub_namespaces_eventhubs_consumergroups.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.EventHub/2024-01-01/namespaces/eventhubs/consumergroups)</li></ul> |
 | `Microsoft.EventHub/namespaces/networkRuleSets` | 2024-01-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.eventhub_namespaces_networkrulesets.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.EventHub/2024-01-01/namespaces/networkRuleSets)</li></ul> |
 | `Microsoft.Insights/diagnosticSettings` | 2021-05-01-preview | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.insights_diagnosticsettings.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Insights/2021-05-01-preview/diagnosticSettings)</li></ul> |
-| `Microsoft.KeyVault/vaults/secrets` | 2024-11-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.keyvault_vaults_secrets.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.KeyVault/2024-11-01/vaults/secrets)</li></ul> |
+| `Microsoft.KeyVault/vaults/secrets` | 2026-02-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.keyvault_vaults_secrets.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.KeyVault/2026-02-01/vaults/secrets)</li></ul> |
 | `Microsoft.Network/privateEndpoints` | 2024-10-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2024-10-01/privateEndpoints)</li></ul> |
 | `Microsoft.Network/privateEndpoints/privateDnsZoneGroups` | 2024-10-01 | <ul style="padding-left: 0px;"><li>[AzAdvertizer](https://www.azadvertizer.net/azresourcetypes/microsoft.network_privateendpoints_privatednszonegroups.html)</li><li>[Template reference](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Network/2024-10-01/privateEndpoints/privateDnsZoneGroups)</li></ul> |
 
@@ -182,10 +182,6 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
       keyVaultResourceId: '<keyVaultResourceId>'
       userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
     }
-    managedIdentities: {
-      systemAssigned: false
-      userAssignedResourceId: '<userAssignedResourceId>'
-    }
     requireInfrastructureEncryption: true
     skuName: 'Premium'
   }
@@ -216,12 +212,6 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
         "userAssignedIdentityResourceId": "<userAssignedIdentityResourceId>"
       }
     },
-    "managedIdentities": {
-      "value": {
-        "systemAssigned": false,
-        "userAssignedResourceId": "<userAssignedResourceId>"
-      }
-    },
     "requireInfrastructureEncryption": {
       "value": true
     },
@@ -249,10 +239,6 @@ param customerManagedKey = {
   keyName: '<keyName>'
   keyVaultResourceId: '<keyVaultResourceId>'
   userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
-}
-param managedIdentities = {
-  systemAssigned: false
-  userAssignedResourceId: '<userAssignedResourceId>'
 }
 param requireInfrastructureEncryption = true
 param skuName = 'Premium'
@@ -520,6 +506,27 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
         retentionDescriptionEnabled: true
         retentionDescriptionTombstoneRetentionTimeInHours: 24
       }
+      {
+        captureDescription: {
+          destination: {
+            identity: {
+              userAssignedResourceId: '<userAssignedResourceId>'
+            }
+            name: 'EventHubArchive.AzureBlockBlob'
+            properties: {
+              archiveNameFormat: '{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}'
+              blobContainer: '<blobContainer>'
+              storageAccountResourceId: '<storageAccountResourceId>'
+            }
+          }
+          enabled: false
+          encoding: 'Avro'
+          intervalInSeconds: 300
+          sizeLimitInBytes: 314572800
+          skipEmptyArchives: true
+        }
+        name: 'az-evh-x-004'
+      }
     ]
     isAutoInflateEnabled: true
     kafkaEnabled: true
@@ -573,10 +580,9 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
     publicNetworkAccess: 'Disabled'
     roleAssignments: [
       {
-        name: 'bd0f41e3-8e3e-4cd3-b028-edd61608bd9f'
         principalId: '<principalId>'
         principalType: 'ServicePrincipal'
-        roleDefinitionIdOrName: 'Owner'
+        roleDefinitionIdOrName: 'Reader'
       }
       {
         name: '<name>'
@@ -730,6 +736,27 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
           "retentionDescriptionCleanupPolicy": "Compact",
           "retentionDescriptionEnabled": true,
           "retentionDescriptionTombstoneRetentionTimeInHours": 24
+        },
+        {
+          "captureDescription": {
+            "destination": {
+              "identity": {
+                "userAssignedResourceId": "<userAssignedResourceId>"
+              },
+              "name": "EventHubArchive.AzureBlockBlob",
+              "properties": {
+                "archiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}",
+                "blobContainer": "<blobContainer>",
+                "storageAccountResourceId": "<storageAccountResourceId>"
+              }
+            },
+            "enabled": false,
+            "encoding": "Avro",
+            "intervalInSeconds": 300,
+            "sizeLimitInBytes": 314572800,
+            "skipEmptyArchives": true
+          },
+          "name": "az-evh-x-004"
         }
       ]
     },
@@ -806,10 +833,9 @@ module namespace 'br/public:avm/res/event-hub/namespace:<version>' = {
     "roleAssignments": {
       "value": [
         {
-          "name": "bd0f41e3-8e3e-4cd3-b028-edd61608bd9f",
           "principalId": "<principalId>",
           "principalType": "ServicePrincipal",
-          "roleDefinitionIdOrName": "Owner"
+          "roleDefinitionIdOrName": "Reader"
         },
         {
           "name": "<name>",
@@ -962,6 +988,27 @@ param eventhubs = [
     retentionDescriptionEnabled: true
     retentionDescriptionTombstoneRetentionTimeInHours: 24
   }
+  {
+    captureDescription: {
+      destination: {
+        identity: {
+          userAssignedResourceId: '<userAssignedResourceId>'
+        }
+        name: 'EventHubArchive.AzureBlockBlob'
+        properties: {
+          archiveNameFormat: '{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}'
+          blobContainer: '<blobContainer>'
+          storageAccountResourceId: '<storageAccountResourceId>'
+        }
+      }
+      enabled: false
+      encoding: 'Avro'
+      intervalInSeconds: 300
+      sizeLimitInBytes: 314572800
+      skipEmptyArchives: true
+    }
+    name: 'az-evh-x-004'
+  }
 ]
 param isAutoInflateEnabled = true
 param kafkaEnabled = true
@@ -1015,10 +1062,9 @@ param privateEndpoints = [
 param publicNetworkAccess = 'Disabled'
 param roleAssignments = [
   {
-    name: 'bd0f41e3-8e3e-4cd3-b028-edd61608bd9f'
     principalId: '<principalId>'
     principalType: 'ServicePrincipal'
-    roleDefinitionIdOrName: 'Owner'
+    roleDefinitionIdOrName: 'Reader'
   }
   {
     name: '<name>'
@@ -1051,6 +1097,11 @@ This instance deploys the module in alignment with the best-practices of the Azu
 
 You can find the full example and the setup of its dependencies in the deployment test folder path [/tests/e2e/waf-aligned]
 
+> **Note**: This test is skipped from the CI deployment validation due to the presence of a `.e2eignore` file in the test folder. The reason for skipping the deployment is:
+```text
+Temporarily excluded: repeated nested-deployment writes under one root correlation failed with DeploymentActive while the first write was still active. The replay source is unproven; this is not a confirmed capacity failure.
+Evidence: https://github.com/Azure/bicep-registry-modules/actions/runs/43426915231/job/131893831729
+```
 
 <details>
 

@@ -83,11 +83,6 @@ module flexibleServer 'br/public:avm/res/db-for-my-sql/flexible-server:<version>
       userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
     }
     geoRedundantBackup: 'Disabled'
-    managedIdentities: {
-      userAssignedResourceIds: [
-        '<managedIdentityResourceId>'
-      ]
-    }
     storageAutoGrow: 'Enabled'
   }
 }
@@ -136,13 +131,6 @@ module flexibleServer 'br/public:avm/res/db-for-my-sql/flexible-server:<version>
     "geoRedundantBackup": {
       "value": "Disabled"
     },
-    "managedIdentities": {
-      "value": {
-        "userAssignedResourceIds": [
-          "<managedIdentityResourceId>"
-        ]
-      }
-    },
     "storageAutoGrow": {
       "value": "Enabled"
     }
@@ -175,11 +163,6 @@ param customerManagedKey = {
   userAssignedIdentityResourceId: '<userAssignedIdentityResourceId>'
 }
 param geoRedundantBackup = 'Disabled'
-param managedIdentities = {
-  userAssignedResourceIds: [
-    '<managedIdentityResourceId>'
-  ]
-}
 param storageAutoGrow = 'Enabled'
 ```
 
@@ -379,10 +362,9 @@ module flexibleServer 'br/public:avm/res/db-for-my-sql/flexible-server:<version>
     publicNetworkAccess: 'Enabled'
     roleAssignments: [
       {
-        name: '2478b63b-0cae-457f-9bd3-9feb00e1925b'
         principalId: '<principalId>'
         principalType: 'ServicePrincipal'
-        roleDefinitionIdOrName: 'Owner'
+        roleDefinitionIdOrName: 'Reader'
       }
       {
         name: '<name>'
@@ -552,10 +534,9 @@ module flexibleServer 'br/public:avm/res/db-for-my-sql/flexible-server:<version>
     "roleAssignments": {
       "value": [
         {
-          "name": "2478b63b-0cae-457f-9bd3-9feb00e1925b",
           "principalId": "<principalId>",
           "principalType": "ServicePrincipal",
-          "roleDefinitionIdOrName": "Owner"
+          "roleDefinitionIdOrName": "Reader"
         },
         {
           "name": "<name>",
@@ -695,10 +676,9 @@ param managedIdentities = {
 param publicNetworkAccess = 'Enabled'
 param roleAssignments = [
   {
-    name: '2478b63b-0cae-457f-9bd3-9feb00e1925b'
     principalId: '<principalId>'
     principalType: 'ServicePrincipal'
-    roleDefinitionIdOrName: 'Owner'
+    roleDefinitionIdOrName: 'Reader'
   }
   {
     name: '<name>'
